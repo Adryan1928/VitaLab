@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.models import User 
+from django.contrib.auth.models import User
 from django.contrib.messages import constants
 from django.contrib import messages
+from django.contrib.auth import authenticate, login
 
 def cadastro(request):
     if request.method == 'GET':
@@ -37,3 +38,20 @@ def cadastro(request):
 
         messages.add_message(request, constants.SUCCESS, 'Usuário salvo com sucesso')
         return redirect('/usuarios/cadastro')
+
+def logar(request):
+    if request.method == 'GET':
+        return render(request, 'login.html')
+    else:
+        username = request.POST.get('username')
+        senha = request.POST.get('senha')
+
+        user = authenticate(username=username, password=senha)
+
+        if user:
+            login(request, user)
+            redirect('/')
+        else:
+            messages.add_message(request, constants.ERROR, 'Username ou senha inválidos')
+            return redirect('/usuarios/login/')
+
