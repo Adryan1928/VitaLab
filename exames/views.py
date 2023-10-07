@@ -68,3 +68,49 @@ def cancelar_pedido(request, pedido_id):
 
     messages.add_message(request, constants.SUCCESS, 'Pedido cancelado com sucesso')
     return redirect('/exames/gerenciar_pedidos/')
+
+
+@login_required
+def gerenciar_exames(request):
+    exames = SolicitacaoExame.objects.filter(usuario = request.user)
+
+    return render(request, 'gerenciar_exames.html', {'exames': exames})
+
+
+@login_required
+def permitir_abrir_exame(request, exame_id):
+    exame = SolicitacaoExame.objects.get(id = exame_id)
+    if not exame.usuario == request.user:
+        messages.add_message(request, constants.ERROR, 'O exame não é seu')
+        return redirect('/exames/gerenciar_exames/')
+    
+    if not exame.requer_senha:
+        if exame.resultado:
+            return redirect(exame.resultado.url)
+        else:
+            messages.add_message(request, constants.ERROR, 'O exame não possui resultado')
+            return redirect('/exames/gerenciar_exames/')
+
+    return redirect(f'/exames/solicitar_senha_exame/{exame_id}')
+
+
+@login_required
+def solicitar_senha_exame(request, exame_id):
+    exame = SolicitacaoExame.objects.get(id = exame_id)
+    if not exame.usuario == request.user:
+        messages.add_message(request, constants.ERROR, 'O exame não é seu')
+        return redirect('/exames/gerenciar_exames/')
+
+    if request.method == 'GET':
+        return render(request, 'solicitar_senha_exame.html', {'exame': exame})
+    else:
+        senha = request.POST.get('senha')
+        if not exame.senha == senha:
+            messages.add_message(request, constants.ERROR, 'Senha incorreta')
+            return redirect(f'/exames/solicitar_senha_exame/{exame_id}')
+        
+        if not exame.resultado:
+            messages.add_message(request, constants.ERROR, 'O exame não possui resultado')
+            return redirect('/exames/gerenciar_exames/')
+        
+        return redirect(exame.resultado.url)
